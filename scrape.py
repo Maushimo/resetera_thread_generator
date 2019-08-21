@@ -19,33 +19,45 @@ titles = []
 
 title_text_file = open("data/titles.txt", "w")
 
-
 # FUNCTIONS
-def iterate_through_pages(page_number):
-    if page_number != 0:
-        req = Request(base_url+'forums/gaming-forum.7/', headers={'User-Agent': 'Mozilla/5.0'})
-        webpage = urlopen(req).read()
-        soup = bs.BeautifulSoup(webpage, 'lxml')
-    else:
-        req = Request(base_url+'forums/gaming-forum.7/'+page_url+str(page_number), headers={'User-Agent': 'Mozilla/5.0'})
-        webpage = urlopen(req).read()
-        soup = bs.BeautifulSoup(webpage, 'lxml')
+def update_request_info(page_number):
+    global req, webpage, soup, threads
 
+    if page_number == 0:
+        url = base_url+'forums/gaming-forum.7/'
+        print(url)
+        # update request info
+        req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        webpage = urlopen(req).read()
+        soup = bs.BeautifulSoup(webpage, 'lxml')
+        # update threads array
+        threads = soup.find_all('div', {'class': 'structItem-title'})
+    else:
+        url = base_url+'forums/gaming-forum.7/'+page_url+str(page_number)
+        print(url)
+        # update request info
+        req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        webpage = urlopen(req).read()
+        soup = bs.BeautifulSoup(webpage, 'lxml')
+        # update threads
+        threads = soup.find_all('div', {'class': 'structItem-title'})
 
 def get_titles():
+    global total_pages, threads, titles, title_text_file
+
+    # update requests with each page
     for p in range(total_pages):
-        try:
-            iterate_through_pages(p)
-        except Exception as e:
-            print(e)
+        update_request_info(p)
+        print(threads)
+        # iterate through all thread objects on current page
         for i in range(len(threads)):
-            try:
+            if str(threads[i].text).replace("\n", "") not in titles:
                 titles.append(str(threads[i].text).replace("\n", ""))
                 title_text_file.write(str(threads[i].text).replace("\n", "") + "\n")
-            except Exception as e:
-                print(e)
+                print("PAGE: " + str(p) + "\n" + "THREAD: " + str(i))
 
     title_text_file.close()
+    print("Finished scraping titles!")
 
 # RUN
 get_titles()
